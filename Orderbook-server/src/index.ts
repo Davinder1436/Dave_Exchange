@@ -16,7 +16,7 @@ app.post('/api/v1/order', (req, res) => {
     res.status(400).send(order.error.message);
     return;
   }
-
+  
   const { baseAsset, quoteAsset, price, quantity, side, kind } = order.data;
   const orderId = getOrderId();
 
@@ -26,7 +26,7 @@ app.post('/api/v1/order', (req, res) => {
   }
 
   const { executedQty, fills } = fillOrder(orderId, price, quantity, side, kind);
-
+  console.log(orderbook)
   res.send({
     orderId,
     executedQty,
