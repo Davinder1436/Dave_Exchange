@@ -7,17 +7,65 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: dave-exchange
-      POSTGRES_USER: dave
-      POSTGRES_PASSWORD: dave1436
+      POSTGRES_DB: my_database
+      POSTGRES_USER: your_user
+      POSTGRES_PASSWORD: your_password
     volumes:
       - timescale-data:/var/lib/postgresql/data
+    networks:
+      - exchange-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U your_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:latest
     container_name: redis
     ports:
       - "6379:6379"
+    networks:
+      - exchange-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  engine:
+    image: davinder1436/dave-exchange-engine:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - exchange-network
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+  api:
+    image: davinder1436/dave-exchange-api:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - exchange-network
+    environment:
+      DB_HOST: timescaledb
+      DB_PORT: 5432
+      DB_USER: your_user
+      DB_PASSWORD: your_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+networks:
+  exchange-network:
+    driver: bridge
 
 volumes:
   timescale-data:
